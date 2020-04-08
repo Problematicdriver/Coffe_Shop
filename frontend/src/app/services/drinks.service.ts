@@ -79,7 +79,6 @@ export class DrinksService {
   //                           }
   //   };
 
-
   constructor(private auth: AuthService, private http: HttpClient) { }
 
   getHeaders() {
