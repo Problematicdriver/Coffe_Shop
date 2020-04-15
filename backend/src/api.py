@@ -34,7 +34,7 @@ def get_drinks():
     return jsonify({
         'success': True,
         'drinks': drinks
-    })
+    }), 200
 
 
 '''
@@ -55,7 +55,7 @@ def get_drinks_details(token):
     return jsonify({
         'success': True,
         'drinks': drinks
-    })
+    }), 200
 
 
 '''
@@ -82,7 +82,7 @@ def add_drinks(token):
         return jsonify({
             "success": True,
             "drinks": [Drink.long(new_drink)]
-        })
+        }), 200
     else:
         abort(422)
 
@@ -104,19 +104,25 @@ def add_drinks(token):
 @app.route('/drinks/<id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
 def patch_drinks(token, id):
-    data = request.get_json()
-    drink = Drink.query.get(id)
-    title = data.get('title', None)
-    recipe = data.get('recipe', None)
     try:
-        if title is not None and recipe is not None:
-            drink.title = title
-            drink.recipe = json.dumps(recipe)
+        data = request.get_json()
+        drink = Drink.query.get(id)
+        title = data.get('title', None)
+        recipe = data.get('recipe', None)
+        if drink is None:
+            abort(404)
+        if title is not None or recipe is not None:
+            if title is not None:
+                drink.title = title
+            if recipe is not None:
+                drink.recipe = json.dumps(recipe)
+        else:
+            abort(404)
         drink.update()
         return jsonify({
             'success': True,
             'drinks': [drink.long()]
-        })
+        }), 200
     except Exception:
         abort(422)
 
@@ -139,19 +145,18 @@ def patch_drinks(token, id):
 def delete_drinks(token, id):
     try:
         drink = Drink.query.get(id)
+        if drink is None:
+            abort(404)
         Drink.delete(drink)
         return jsonify({
             'success': True,
             'drinks': [Drink.long(drink)]
-        })
+        }), 200
     except Exception:
         abort(422)
 
 
 ## Error Handling
-'''
-Example error handling for unprocessable entity
-'''
 @app.errorhandler(422)
 def unprocessable(error):
     return jsonify({
@@ -159,24 +164,6 @@ def unprocessable(error):
         "error": 422,
         "message": "unprocessable"
     }), 422
-
-
-'''
-@TODO implement error handlers using the @app.errorhandler(error) decorator
-    each error handler should return (with approprate messages):
-             jsonify({
-                    "success": False,
-                    "error": 404,
-                    "message": "resource not found"
-                    }), 404
-
-'''
-
-
-'''
-@TODO implement error handler for 404
-    error handler should conform to general task above
-'''
 
 
 @app.errorhandler(404)
@@ -188,10 +175,31 @@ def not_found(error):
     }), 404
 
 
-'''
-@TODO implement error handler for AuthError
-    error handler should conform to general task above
-'''
+@app.errorhandler(401)
+def unauthorized(error):
+    return jsonify({
+        'success': False,
+        'error': 401,
+        'message': 'unauthorized'
+    }), 401
+
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return jsonify({
+        'success': False,
+        'error': 405,
+        'message': 'method not allowed'
+    }), 405
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    return jsonify({
+        'success': False,
+        'error': 500,
+        'message': 'Internal Server Error'
+    }), 500
 
 
 @app.errorhandler(AuthError)
